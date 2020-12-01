@@ -4,6 +4,7 @@ export const mapAlertToProps = (reduxState) => {
   };
 };
 
+
 export const mapUserAndProfileToProps = (reduxState) => {
   return {
     user: reduxState.userState.user,
