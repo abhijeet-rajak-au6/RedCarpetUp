@@ -16,7 +16,7 @@ export const register = (userCredentials) => async (dispatch) => {
   console.log(userCredentials);
   return new Promise(async (resolve, reject) => {
     try {
-      const { data } = await axios.post(`${keys.BASE_URL_LOCAL}/register`, {
+      const { data } = await axios.post(`${keys.BASE_URL}/register`, {
         ...userCredentials,
       });
       console.log(data);
@@ -37,7 +37,7 @@ export const login = (userCredentials) => async (dispatch) => {
   console.log(userCredentials);
   return new Promise(async (resolve, reject) => {
     try {
-      const { data } = await axios.post(`${keys.BASE_URL_LOCAL}/login`, {
+      const { data } = await axios.post(`${keys.BASE_URL}/login`, {
         ...userCredentials,
       });
       console.log(data);
@@ -69,7 +69,7 @@ export const logout = () => async (dispatch) => {
       setToken(JSON.parse(localStorage.getItem("user")).token);
     }
     try {
-      const { data } = await axios.delete(`${keys.BASE_URL_LOCAL}/logout`);
+      const { data } = await axios.delete(`${keys.BASE_URL}/logout`);
       console.log(data);
       dispatch({
         type: CLEAR_USER,
@@ -102,7 +102,7 @@ export const createUser = (userCredentials) => async (dispatch) => {
       if (localStorage.getItem("user")) {
         setToken(JSON.parse(localStorage.getItem("user")).token);
       }
-      const { data } = await axios.post(`${keys.BASE_URL_LOCAL}/user`, {
+      const { data } = await axios.post(`${keys.BASE_URL}/user`, {
         ...userCredentials,
       });
       console.log(data);
@@ -139,7 +139,7 @@ export const getCreatedUser = () => async (dispatch) => {
       if (localStorage.getItem("user")) {
         setToken(JSON.parse(localStorage.getItem("user")).token);
       }
-      const { data } = await axios.get(`${keys.BASE_URL_LOCAL}/getAllUsers`);
+      const { data } = await axios.get(`${keys.BASE_URL}/getAllUsers`);
       console.log(data);
       dispatch({
         type: SET_USER,
@@ -178,7 +178,7 @@ export const deleteUser = (id) => async (dispatch) => {
       if (localStorage.getItem("user")) {
         setToken(JSON.parse(localStorage.getItem("user")).token);
       }
-      const { data } = await axios.delete(`${keys.BASE_URL_LOCAL}/user/${id}`);
+      const { data } = await axios.delete(`${keys.BASE_URL}/user/${id}`);
       console.log("delete", data);
       dispatch({
         type: SET_USER,
@@ -215,7 +215,7 @@ export const getSingleUser = (id) => async (dispatch) => {
         setToken(JSON.parse(localStorage.getItem("user")).token);
       }
       const { data } = await axios.get(
-        `${keys.BASE_URL_LOCAL}/getSingleUser/${id}`
+        `${keys.BASE_URL}/getSingleUser/${id}`
       );
       console.log(data);
       dispatch({
@@ -254,7 +254,7 @@ export const updateUser = (id, userCredentials) => async (dispatch) => {
       if (localStorage.getItem("user")) {
         setToken(JSON.parse(localStorage.getItem("user")).token);
       }
-      const { data } = await axios.patch(`${keys.BASE_URL_LOCAL}/user/${id}`, {
+      const { data } = await axios.patch(`${keys.BASE_URL}/user/${id}`, {
         ...userCredentials,
       });
       console.log(data);
