@@ -32,7 +32,7 @@ const userSchema = Schema({
 
 userSchema.methods.generateToken = async function () {
   this.token = await sign({ id: this._id }, process.env.PRIVATE_KEY, {
-    expiresIn: 60 * 1,
+    expiresIn: 60 * 90,
   });
 };
 
