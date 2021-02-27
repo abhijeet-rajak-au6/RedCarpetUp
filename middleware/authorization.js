@@ -1,15 +1,19 @@
-const { sign, verify } = require("jsonwebtoken");
 const userModel = require("../models/User");
+const { validationResult } = require("express-validator");
+const { getOne } = require("../Controller/handleFactory");
+const AppError = require("../util/appErrorHandler");
 
 module.exports = {
-  async authorization(req, res, next) {
+  authorized: (...roles) => async (req, res, next) => {
     try {
-      let token = verify(req.headers.authorization, process.env.PRIVATE_KEY);
-      // console.log(token);
-      req.user = token;
-      next();
+      console.log("in authorized");
+      const condition = { _id: req.user.id, roles: { $in: roles } };
+      const getAuthorizedUser = await getOne(userModel, condition);
+      if (!getAuthorizedUser)
+        throw new AppError("You are not authorized for this action !", 403);
+      return next();
     } catch (err) {
-      res.status(401).send({ status: "fail", msg: "Authentication failed" });
+      next(new AppError(err.message, err.statusCode));
     }
   },
 };

@@ -1,38 +1,44 @@
 const { Schema, model } = require("mongoose");
 const { sign, verify } = require("jsonwebtoken");
 const { compare, hash } = require("bcryptjs");
+const AppError = require("../util/appErrorHandler");
+const { getOne } = require("../Controller/handleFactory");
 
 const userSchema = Schema({
   name: {
     type: String,
     required: [true, "Please provide your name"],
   },
-  phone: {
-    type: String,
-    required: [true, "Please enter your phone"],
-  },
   email: {
     type: String,
-    unique: true,
+    unique: [true, "email must be unique"],
     required: [true, "Please enter your email"],
   },
-  password:{
-      type:String,
-      required:[true,'Please provide password']
+  password: {
+    type: String,
+    required: [true, "Please provide password"],
   },
   token: {
     type: String,
     default: null,
   },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
+  roles: {
+    type: String,
+    required: [true, "please select the role"],
+    validate: {
+      validator: function (value) {
+        const roles = ["customer", "admin", "agent"];
+        if (roles.includes(value.toLowerCase())) return true;
+        return false;
+      },
+      message: "roles can be either admin || agent || customer",
+    },
   },
 });
 
 userSchema.methods.generateToken = async function () {
   this.token = await sign({ id: this._id }, process.env.PRIVATE_KEY, {
-    expiresIn: 60 * 90,
+    expiresIn: 60 * 10,
   });
 };
 
@@ -40,14 +46,13 @@ userSchema.statics.findByEmailAndPassword = async function (email, password) {
   let userObj = null;
   try {
     return new Promise(async function (resolve, reject) {
-      const user = await userModel.find({ email: email });
-    //   console.log('user',user);
-      console.log('password',password);
-      if (user.length === 0) return reject("Incorrect credentials");
-      userObj = user;
-      const isMatched = await compare(password, user[0].password);
+      const user = await getOne(userModel, { email: email });
 
-      if (!isMatched) return reject("Incorrect credentials");
+      if (!user) return reject(new AppError("Incorrect credentials", 404));
+      userObj = user;
+      const isMatched = await compare(password, user.password);
+
+      if (!isMatched) return reject(new AppError("Incorrect credentials", 404));
       resolve(userObj);
     });
   } catch (err) {
@@ -70,6 +75,15 @@ userSchema.pre("save", async function (next) {
     console.log(err);
     next(err);
   }
+});
+userSchema.pre("updateOne", function (next) {
+  this.options.runValidators = true;
+  next();
+});
+userSchema.post("save", function (error, _, next) {
+  next(
+    error.code === 11000 ? new AppError("email is already registered") : error
+  );
 });
 
 const userModel = model("user", userSchema);

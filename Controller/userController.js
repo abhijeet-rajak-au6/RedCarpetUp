@@ -1,202 +1,132 @@
 const userModel = require("../models/User");
-const { validationResult } = require("express-validator");
+const { Schema } = require("mongoose");
+const {
+  createOne,
+  modifyOne,
+  getOne,
+  getAll,
+} = require("../Controller/handleFactory");
+const AppError = require("../util/appErrorHandler");
+const Response = require("../util/responseHandler");
+const mongoose = require("mongoose");
 
 module.exports = {
-  async register(req, res) {
+  async register(req, res, next) {
     try {
-      const { password, email, name, phone } = req.body;
-      // const pwdRegex = "^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$";
-      // const pattern = new RegExp(pwdRegex);
-      const errors = validationResult(req);
-      console.log("errors", errors.array());
-      if (!errors.isEmpty()) {
-        return res.status(403).send({
-          errors: errors.array(),
-        });
-      }
-      const newUser = new userModel({ ...req.body });
-      await newUser.generateToken();
+      //payload
+      const { password, email, name, roles } = req.body;
+
+      // create user
+      const newUser = await createOne(userModel, {
+        password,
+        email,
+        name,
+        roles,
+      });
+
       // console.log("new user token",newUser.token);
       const user = await newUser.save();
-      return res.status(200).send({
-        status: "success",
-        msg: "user registerd sucessfully",
+
+      if (!user) {
+        throw new AppError("user not registered please try again !", 400);
+      }
+      req.locals = new Response("user regsitered sucessfully", 200);
+
+      // generate response
+      next();
+    } catch (err) {
+      next(new AppError(err.message, err.statusCode || 500));
+    }
+  },
+  async login(req, res, next) {
+    try {
+      //payload
+      const { password, email } = req.body;
+
+      // find email and password
+      const user = await userModel.findByEmailAndPassword(email, password);
+      console.log("login");
+      // generate token
+      user.generateToken();
+
+      // save the token
+      await user.save({ validateBeforeSave: false });
+
+      // response
+      req.locals = new Response(`Welcome ${user.name}`, 200, {
         token: user.token,
       });
+      next();
     } catch (err) {
-      // console.log(err);
-      if (err.message.includes("phone")) {
-        return res.send({ msg: "please provide unique phone no" });
-      } else if (err.message.includes("email")) {
-        return res.send({ msg: "please provide unique email id" });
-      }
+      next(new AppError(err.message, err.statusCode));
     }
   },
 
-  async getAllUsers(req, res) {
-    try {
-      const allUsers = await userModel.find(
-        { createdBy: req.user.id },
-        { name: 1, email: 1, phone: 1, _id: 1 }
-      );
-      return res.status(201).send({
-        status: "success",
-        users: allUsers,
-      });
-    } catch (err) {
-      return res.status(500).send({
-        status: "fail",
-        msg: err.message,
-      });
-    }
-  },
-
-  async login(req, res) {
-    const { password, email } = req.body;
-    if (!password || !email)
-      return res.status(404).send({ msg: "Pls give email and password" });
-    try {
-      const errors = validationResult(req);
-      console.log("errors", errors.array());
-      if (!errors.isEmpty()) {
-        return res.status(403).send({
-          errors: errors.array(),
-        });
-      }
-      const user = await userModel.findByEmailAndPassword(email, password);
-      // console.log('users', user);
-      user[0].generateToken();
-      await user[0].save({ validateBeforeSave: false });
-
-      return res.status(200).send({
-        status: "success",
-        msg: `Welcome ${user[0].name}`,
-        token: user[0].token,
-      });
-    } catch (err) {
-      return res.status(404).send({ msg: err });
-    }
-  },
-
-  async logout(req, res) {
+  async logout(req, res, next) {
     try {
       const currentUser = req.user.id;
-      const user = await userModel.findOne({ _id: currentUser });
+      condition = { _id: currentUser };
+      const user = await getOne(userModel, condition);
       if (user) {
         user.token = null;
-        // user.refreshToken = null;
+
         await user.save({ validateBeforeSave: false });
-        return res
-          .status(200)
-          .send({ status: "success", msg: "Thank you visit again" });
-      } else {
-        throw Error("Please Login first");
+        req.locals = new Response("Thank you visit again", 200);
+        next();
       }
-    } catch (err) {}
+      throw new AppError("Session expired", 400);
+    } catch (err) {
+      next(new AppError(err.message, err.statusCode));
+    }
   },
-  async createNewUser(req, res) {
+  async listAllUsers(req, res, next) {
     try {
-      const { password, email, name, phone } = req.body;
-      // const pwdRegex = "^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$";
-      // const pattern = new RegExp(pwdRegex);
-      const errors = validationResult(req);
-      console.log("errors", errors.array());
-      if (!errors.isEmpty()) {
-        return res.status(403).send({
-          errors: errors.array(),
-        });
+      const { pageNo, limit } = req.query;
+      const attributes = ["name", "email", "roles"];
+      const allUsers = await getAll(userModel, req.query);
+      if (!allUsers.length > 0) {
+        throw new AppError("No User Found !", 404);
       }
-      const newUser = new userModel({ ...req.body, createdBy: req.user.id });
-      // await newUser.generateToken();
-      // console.log("new user token",newUser.token);
-      const user = await newUser.save();
-      return res.status(200).send({
-        status: "success",
-        msg: "user created sucessfully",
-        // token: user.token,
-      });
+      req.locals = new Response("List of users", 200, { users: allUsers });
+      next();
     } catch (err) {
       console.log(err);
-      if (err.message.includes("phone")) {
-        return res.status(403).send({ msg: "please provide unique phone no" });
-      } else if (err.message.includes("email")) {
-        return res.status(403).send({ msg: "please provide unique email id" });
-      }
+      next(new AppError(err.message, err.statusCode));
     }
   },
 
-  async updateUser(req, res) {
+  async editUser(req, res, next) {
     try {
+      const parameter = Object.keys(req.body);
+      console.log(req.body[parameter[0]]);
       const { id } = req.params;
-      const errors = validationResult(req);
-      console.log("errors", errors.array());
-      if (!errors.isEmpty()) {
-        return res.status(403).send({
-          errors: errors.array(),
-        });
-      }
-      const user = await userModel
-        .findOneAndUpdate({ _id: id }, { ...req.body }, { new: true })
-        .select("-password");
-      console.log(user);
-      return res.status(201).send({
-        status: "success",
-        user: user,
-      });
-    } catch (err) {
-      return res.status(500).send({
-        status: "fail",
-        msg: err.message,
-      });
-    }
-  },
+      console.log(id);
+      // console.log(Mongoose.Types.ObjectId(id));
+      let set = {};
+      let condition = { _id: mongoose.Types.ObjectId(id) };
 
-  async deleteUser(req, res) {
-    try {
-      const { id } = req.params;
-      console.log("id", id);
-      const result = await userModel.findOneAndDelete({ _id: id });
-      console.log("result", result);
-      if (!Object.keys(result).length) {
-        return res.status(404).send({
-          status: "fail",
-          msg: "user not found",
-        });
-      }
-      const users = await userModel.find({ createdBy: req.user.id });
-      console.log("users ", users);
-      return res.status(201).send({
-        status: "success",
-        msg: "user deleted sucessfully",
-        users,
+      parameter.map((p) => {
+        if (p === "roles") set[p] = req.body[p].toLowerCase();
       });
-    } catch (err) {
-      return res.status(500).send({
-        status: "fail",
-        msg: err.message,
-      });
-    }
-  },
 
-  async getSingleUser(req, res) {
-    try {
-      const { id } = req.params;
-      const user = await userModel.findOne({ _id: id });
-      if (!Object.keys(user).length) {
-        return res.status(404).send({
-          status: "fail",
-          msg: "no user is found",
-        });
+      console.log(set);
+      console.log(condition);
+      const updatedUser = await modifyOne(userModel, set, condition);
+
+      console.log("updatedUser", updatedUser);
+      if (!updatedUser.n) throw new AppError("User not found !", 404);
+
+      if (!updatedUser.nModified) {
+        req.locals = new Response("Already Updated !", 200);
+        next();
       }
-      return res.status(200).send({
-        status: "success",
-        user,
-      });
+
+      req.locals = new Response("Updated sucessfully !", 201);
+
+      next();
     } catch (err) {
-      return res.status(500).send({
-        status: "fail",
-        msg: err.message,
-      });
+      console.log(err.name, err.code);
+      next(new AppError(err.message, err.statusCode));
     }
   },
 };
