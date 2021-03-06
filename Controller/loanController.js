@@ -32,28 +32,41 @@ module.exports = {
 
       const { customerId } = req.params;
 
+      // check for valid params Id
+
+      console.log(mongoose.Types.ObjectId.isValid(customerId));
+      if (!mongoose.Types.ObjectId.isValid(customerId))
+        throw new AppError("Invalid customer id", 400);
+
       //saved the detail to database
       const loanRequest = new loanModel({
         principleAmount,
         bankName,
         modeOfInterest,
-        bankAccountNo,
+        bankAccountNo: String(bankAccountNo),
         duration,
         loanState: "NEW",
         agent: req.user.id,
         customer: customerId,
       });
-      console.log(loanRequest.id);
-      delete loanRequest.id;
+      // console.log(loanRequest.id);
+      // delete loanRequest.id;
 
-      if (!loanRequest.validateBankName(bankName))
-        throw new AppError("Invalid Bank Name", 400);
+      if (!principleAmount)
+        throw new AppError("principle Amount not found !", 400);
 
+      if (!duration) throw new AppError("duration not found !", 400);
       if (!loanRequest.validateLoanMode(modeOfInterest))
         throw new AppError("Invalid Loan mode", 400);
 
-      if (!loanRequest.validateBankAccountNo(bankAccountNo))
-        throw new AppError("Invalid bank account number", 400);
+      if (!loanRequest.validateBankName(bankName))
+        throw new AppError(
+          "We have loan facility for HDFC or Axis or SBI bank",
+          400
+        );
+
+      if (!loanRequest.validateBankAccountNo(String(bankAccountNo)))
+        throw new AppError("Bank account can either be 8 or 12 digit", 400);
 
       const { emi, totalAmount, interestPayable } = calculateEmi(loanRequest);
       // add emi totalAmount and InterestPayable
@@ -70,22 +83,23 @@ module.exports = {
       }
 
       // response
-      console.log("savedLoanrequest", savedLoanRequest);
+      // console.log("savedLoanrequest", savedLoanRequest);
       req.locals = new Response("Your loan request has been saved !", 201, {
         loanDetails: savedLoanRequest,
       });
       next();
     } catch (err) {
-      console.log(err.message);
+      // console.log(err.message);
       next(new AppError(err.message, err.statusCode));
     }
   },
-  // @todo diferentiate between serveroffset and the user offset 1) Both equal 2)Both diffreent
+
   async approveLoan(req, res, next) {
     try {
       // getting loanId
       const { loanId } = req.params;
-
+      if (!mongoose.Types.ObjectId.isValid(loanId))
+        throw new AppError("Invalid loan id", 400);
       // chacking for existence of loan of that id
       const loan = await getOne(loanModel, { _id: loanId });
       if (loan) {
@@ -104,6 +118,7 @@ module.exports = {
             { _id: loanId }
           );
 
+          console.log("approve", approvedLoan);
           // check whether loan approved or not
           if (approvedLoan.n && approvedLoan.nModified) {
             let getApprovedLoan = await getOne(loanModel, {
@@ -147,7 +162,7 @@ module.exports = {
             throw new AppError("Loan not found !", 404);
           }
         } else {
-          throw new AppError("loan is already approved !");
+          throw new AppError("loan is already approved !", 400);
         }
       } else {
         throw new AppError("Loan not found !", 404);
@@ -163,6 +178,11 @@ module.exports = {
     session.startTransaction();
     try {
       const { loanId } = req.params;
+
+      console.log("loanId", loanId);
+      if (!mongoose.Types.ObjectId.isValid(loanId))
+        throw new AppError("Invalid loan id", 400);
+
       const {
         principleAmount,
         duration,
@@ -216,6 +236,7 @@ module.exports = {
 
       let { emi, totalAmount, interestPayable } = calculateEmi(modifiedLoan);
 
+      console.log(emi, totalAmount, interestPayable);
       let modifyAmount = await modifyOne(
         loanModel,
         {
@@ -302,11 +323,12 @@ module.exports = {
           .paginate();
 
         allLoans = await features.query;
-        console.log(allLoans);
+        console.log("allLoans", allLoans);
 
-        if (!allLoans.length) throw new AppError("No Loan Found !");
+        if (!allLoans.length) throw new AppError("No Loan Found !", 404);
 
         allLoans.map((al) => {
+          console.log(al.timeZoneOffset * -1);
           al.loanStart = moment(al.loanStart)
             .utc(al.timeZoneOffset * -1)
             .format("DD-MM-YYYY, hh:mm:ss");
@@ -318,21 +340,41 @@ module.exports = {
           allLoans,
         });
       } else {
-        loan = await loanModel
+        console.log("LOANS BY CUSTOMER");
+        loan = loanModel
           .find({ customer: req.user.id })
           .populate({
             path: "customer",
-            select: { name: 1, email: 1, _id: 0 },
+            select: { name: 1, email: 1 },
           })
           .select(filterAttr)
           .lean();
+        const features = new APIFeature(loan, req.query)
+          .filter(req.headers.timezoneoffset * 1)
+          .sort()
+          .limitFields()
+          .paginate();
 
-        delete loan.id;
-        if (!loan.length)
+        allLoans = await features.query;
+        // console.log("All loan", allLoans);
+        if (!allLoans.length)
+          throw new AppError("Loan not found between loan Start date", 404);
+
+        allLoans.map((al) => {
+          console.log(al.timeZoneOffset * -1);
+          al.loanStart = moment(al.loanStart)
+            .utc(al.timeZoneOffset * -1)
+            .format("DD-MM-YYYY, hh:mm:ss");
+          delete al.id;
+          delete al.__v;
+        });
+
+        // delete loan.id;
+        if (!allLoans.length)
           throw new AppError("Customer donot have issued any loan !", 404);
-        console.log(loan);
+        // console.log(loan);
 
-        req.locals = new Response("All loans", 200, { loan });
+        req.locals = new Response("All loans", 200, { allLoans });
       }
 
       // get all loans

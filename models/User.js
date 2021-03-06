@@ -82,7 +82,9 @@ userSchema.pre("updateOne", function (next) {
 });
 userSchema.post("save", function (error, _, next) {
   next(
-    error.code === 11000 ? new AppError("email is already registered") : error
+    error.code === 11000
+      ? new AppError("email is already registered", 403)
+      : error
   );
 });
 

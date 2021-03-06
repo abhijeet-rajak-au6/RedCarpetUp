@@ -16,6 +16,8 @@ module.exports = {
       //payload
       const { password, email, name, roles } = req.body;
 
+      console.log(password.length);
+      console.log(email.length);
       // create user
       const newUser = await createOne(userModel, {
         password,
@@ -30,7 +32,7 @@ module.exports = {
       if (!user) {
         throw new AppError("user not registered please try again !", 400);
       }
-      req.locals = new Response("user regsitered sucessfully", 200);
+      req.locals = new Response("user registered sucessfully", 201);
 
       // generate response
       next();
@@ -45,7 +47,6 @@ module.exports = {
 
       // find email and password
       const user = await userModel.findByEmailAndPassword(email, password);
-      console.log("login");
       // generate token
       user.generateToken();
 
@@ -100,7 +101,12 @@ module.exports = {
       const parameter = Object.keys(req.body);
       console.log(req.body[parameter[0]]);
       const { id } = req.params;
-      console.log(id);
+
+      // check for valid params id
+
+      if (!mongoose.Types.ObjectId.isValid(id))
+        throw new AppError("Invalid Id", 400);
+
       // console.log(Mongoose.Types.ObjectId(id));
       let set = {};
       let condition = { _id: mongoose.Types.ObjectId(id) };
@@ -109,8 +115,8 @@ module.exports = {
         if (p === "roles") set[p] = req.body[p].toLowerCase();
       });
 
-      console.log(set);
-      console.log(condition);
+      if (!Object.keys(set).length) throw new AppError("Invalid payload", 400);
+
       const updatedUser = await modifyOne(userModel, set, condition);
 
       console.log("updatedUser", updatedUser);

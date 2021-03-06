@@ -32,12 +32,15 @@ class APIFeatures {
       /\b(gte|gt|lte|lt)\b/g,
       (match) => `$${match}`
     );
-    console.log(JSON.parse(queryStr));
+
+    console.log(queryStr);
     this.query = this.query.find(JSON.parse(queryStr));
+    // this.query.then((res) => console.log("res", res));
 
     return this;
   }
   sort() {
+    console.log("sort");
     if (this.queryString.sort) {
       const sortBy = this.queryString.sort.split(",").join(" ");
       this.query = this.query.sort(sortBy);
@@ -53,6 +56,11 @@ class APIFeatures {
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(",").join(" ");
       this.query = this.query.select(fields);
+    } else {
+      this.query = this.query.select({
+        name: 1,
+        email: 1,
+      });
     }
 
     return this;
@@ -63,7 +71,6 @@ class APIFeatures {
     const skip = (page - 1) * limit;
 
     this.query = this.query.skip(skip).limit(limit);
-
     return this;
   }
   populate(popFields) {

@@ -24,7 +24,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use((error, req, res, next) => {
-  console.log(error);
   if (error.message.includes("user validation failed"))
     error.message = error.message.slice(error.message.indexOf(":"));
 
@@ -36,8 +35,10 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 1234;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   // console.log(path.resolve(__dirname,"F.E","build","index.html"));
 
   console.log("Server is running at port " + PORT);
 });
+
+module.exports = server;

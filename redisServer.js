@@ -3,7 +3,7 @@ const REDIS_PORT = process.env.PORT || 6379;
 
 const client = redis.createClient();
 
-client.on("connect", () => {
+client.on("connect", async () => {
   console.log("Client connected to redis ...");
 });
 

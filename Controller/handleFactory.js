@@ -10,7 +10,7 @@ module.exports = {
       new AppError(err.message, 500);
     }
   },
-  async modifyOne(Model, set, condition, opt) {
+  async modifyOne(Model, set, condition, opt = { new: true }) {
     console.log("set", set);
     console.log("condition", condition);
     try {
@@ -28,7 +28,6 @@ module.exports = {
     }
   },
   async getOne(Model, query, attributes) {
-    console.log(attributes);
     try {
       return Model.findOne(query).select(attributes);
     } catch (err) {

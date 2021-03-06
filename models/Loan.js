@@ -32,7 +32,6 @@ const loanSchema = Schema({
     required: [true, "Please Select the bank"],
     validate: {
       validator: function (value) {
-        console.log(value);
         const bankData = [
           { name: "HDFC", FI: 8, RI: 10 },
           { name: "Axis", FI: 7, RI: 8 },
@@ -108,7 +107,6 @@ const loanSchema = Schema({
   },
 });
 loanSchema.methods.validateBankName = function (bankName) {
-  console.log("validate");
   const bankData = [
     { name: "HDFC", FI: 8, RI: 10 },
     { name: "Axis", FI: 7, RI: 8 },
@@ -120,14 +118,9 @@ loanSchema.methods.validateBankName = function (bankName) {
     return false;
   }
 
-  console.log("getBank", getBank);
-  console.log("modeOfInterest", this.modeOfInterest);
-  console.log(this.modeOfInterest === getBank.FI);
   if (this.modeOfInterest === "FI") {
-    console.log("hello");
     this.interestRate = getBank.FI;
   } else {
-    console.log("world");
     this.interestRate = getBank.RI;
   }
   return true;
