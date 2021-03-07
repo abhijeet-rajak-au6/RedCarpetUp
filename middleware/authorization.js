@@ -6,7 +6,6 @@ const AppError = require("../util/appErrorHandler");
 module.exports = {
   authorized: (...roles) => async (req, res, next) => {
     try {
-      console.log("in authorized");
       const condition = { _id: req.user.id, roles: { $in: roles } };
       const getAuthorizedUser = await getOne(userModel, condition);
       if (!getAuthorizedUser)

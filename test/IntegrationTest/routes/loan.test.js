@@ -77,8 +77,6 @@ describe("/api/v1/loan/loan-request/:customerId", () => {
       expiresIn: 60 * 10,
     });
 
-    console.log("customer Id", customer._id);
-
     const resCustomer = await request(server)
       .post("/api/v1/loan/loan-request/" + customer._id)
       .set("Authorization", tokenCustomer)
@@ -143,7 +141,6 @@ describe("/api/v1/loan/loan-request/:customerId", () => {
       customer: customer._id,
     });
 
-    console.log("LOAN ", loan);
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty("message", "Invalid Loan mode");
     expect(loan).toBeNull();
@@ -168,7 +165,6 @@ describe("/api/v1/loan/loan-request/:customerId", () => {
       customer: customer._id,
     });
 
-    console.log("LOAN ", loan);
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty(
       "message",
@@ -196,7 +192,6 @@ describe("/api/v1/loan/loan-request/:customerId", () => {
       customer: customer._id,
     });
 
-    console.log("LOAN ", res.body);
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty(
       "message",
@@ -436,7 +431,7 @@ describe("/api/v1/loan/edit-loan/:loanId", () => {
   });
   it("return 404 if loan is not found", async () => {
     const loanId = new mongoose.Types.ObjectId();
-    console.log(loanId);
+
     const res = await request(server)
       .patch("/api/v1/loan/edit-loan/" + loanId)
       .set("Authorization", token)
@@ -509,8 +504,6 @@ describe("/api/v1/loan/edit-loan/:loanId", () => {
     const loan = await loanModel.findOne({
       _id: loanRequest._id,
     });
-
-    console.log("LOAN STATE", loan);
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("message", "Loan updated sucessfully");
@@ -656,7 +649,6 @@ describe("/api/v1/loan/get-all-loans", () => {
       .get("/api/v1/loan/get-all-loans?loanState=NEW")
       .set("Authorization", token);
 
-    // console.log(res.body);
     expect(res.status).toBe(200);
     res.body.allLoans.map((loan) => expect(loan.loanState).toBe("NEW"));
 
@@ -694,7 +686,6 @@ describe("/api/v1/loan/get-all-loans", () => {
       .get("/api/v1/loan/get-all-loans?loanState=APPROVED")
       .set("Authorization", token);
 
-    // console.log(res.body);
     expect(res.status).toBe(200);
     res.body.allLoans.map((loan) => expect(loan.loanState).toBe("APPROVED"));
 
@@ -755,7 +746,7 @@ describe("/api/v1/loan/get-all-loans", () => {
       .set("Authorization", token);
 
     expect(res.status).toBe(200);
-    console.log(res.body);
+
     res.body.allLoans.map((loan) => expect(loan.loanState).toBe("REJECTED"));
   });
   it("return all customer loans", async () => {

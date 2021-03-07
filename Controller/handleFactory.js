@@ -11,12 +11,9 @@ module.exports = {
     }
   },
   async modifyOne(Model, set, condition, opt = { new: true }) {
-    console.log("set", set);
-    console.log("condition", condition);
     try {
       return Model.updateOne({ ...condition }, { ...set }, { ...opt });
     } catch (err) {
-      console.log(err);
       new AppError(err.message, 500);
     }
   },

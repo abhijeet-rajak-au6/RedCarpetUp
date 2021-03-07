@@ -9,7 +9,7 @@ module.exports = {
         let token = verify(req.headers.authorization, process.env.PRIVATE_KEY);
 
         req.user = token;
-        console.log("passes authentication");
+
         return next();
       }
 

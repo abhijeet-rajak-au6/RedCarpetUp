@@ -8,8 +8,6 @@ class APIFeatures {
   filter(offset) {
     let queryString = { ...this.queryString };
 
-    console.log("api feature", queryString);
-
     Object.keys(queryString).map((qs) => {
       let gteDate = moment(queryString[qs].gte, "DD/MM/YYYY").utcOffset(
         offset * -1 || "+5:30"
@@ -33,14 +31,12 @@ class APIFeatures {
       (match) => `$${match}`
     );
 
-    console.log(queryStr);
     this.query = this.query.find(JSON.parse(queryStr));
     // this.query.then((res) => console.log("res", res));
 
     return this;
   }
   sort() {
-    console.log("sort");
     if (this.queryString.sort) {
       const sortBy = this.queryString.sort.split(",").join(" ");
       this.query = this.query.sort(sortBy);
@@ -52,7 +48,6 @@ class APIFeatures {
   }
 
   limitFields() {
-    console.log(this.queryString.fields);
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(",").join(" ");
       this.query = this.query.select(fields);
@@ -74,7 +69,6 @@ class APIFeatures {
     return this;
   }
   populate(popFields) {
-    console.log("query", this.query);
     this.query = this.query.populate(popFields);
     return this;
   }

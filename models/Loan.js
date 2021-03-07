@@ -137,7 +137,6 @@ loanSchema.methods.validateBankAccountNo = function (bankNo) {
 };
 
 loanSchema.post("save", function (error, _, next) {
-  console.log(error);
   next(
     error.code === 11000
       ? new AppError(

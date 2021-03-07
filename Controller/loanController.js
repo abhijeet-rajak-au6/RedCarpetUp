@@ -13,7 +13,7 @@ const {
   getAll,
 } = require("../Controller/handleFactory");
 const moment = require("moment");
-const client = require("../redisServer");
+// const client = require("../redisServer");
 const { deleteOne } = require("../models/Loan");
 
 // const { JsonWebTokenError } = require("jsonwebtoken");
@@ -34,7 +34,6 @@ module.exports = {
 
       // check for valid params Id
 
-      console.log(mongoose.Types.ObjectId.isValid(customerId));
       if (!mongoose.Types.ObjectId.isValid(customerId))
         throw new AppError("Invalid customer id", 400);
 
@@ -118,7 +117,6 @@ module.exports = {
             { _id: loanId }
           );
 
-          console.log("approve", approvedLoan);
           // check whether loan approved or not
           if (approvedLoan.n && approvedLoan.nModified) {
             let getApprovedLoan = await getOne(loanModel, {
@@ -168,7 +166,6 @@ module.exports = {
         throw new AppError("Loan not found !", 404);
       }
     } catch (err) {
-      console.log(err);
       next(new AppError(err.message, err.statusCode));
     }
   },
@@ -179,7 +176,6 @@ module.exports = {
     try {
       const { loanId } = req.params;
 
-      console.log("loanId", loanId);
       if (!mongoose.Types.ObjectId.isValid(loanId))
         throw new AppError("Invalid loan id", 400);
 
@@ -204,7 +200,6 @@ module.exports = {
         body.includes(key) ? (filteredBody[key] = req.body[key]) : null
       );
 
-      console.log("filteredBody", filteredBody);
       // check for approved loan
 
       const loan = await getOne(loanModel, { _id: loanId });
@@ -216,8 +211,11 @@ module.exports = {
         throw new AppError("Cant edit as loan is already approved", 403);
       }
 
-      client.set("key", loan, (err) => err);
-      client.get("key", (err, value) => console.log("value", value));
+      // below comment line saves the previous loan value but while docerizing
+      // redis server is not connecting therefore need to comment out the code
+
+      /* client.set("key", loan, (err) => err);
+       client.get("key", (err, value) => console.log("value", value));*/
 
       /// trasacttion start
 
@@ -236,7 +234,6 @@ module.exports = {
 
       let { emi, totalAmount, interestPayable } = calculateEmi(modifiedLoan);
 
-      console.log(emi, totalAmount, interestPayable);
       let modifyAmount = await modifyOne(
         loanModel,
         {
@@ -259,7 +256,6 @@ module.exports = {
       }
       next();
     } catch (err) {
-      console.log(err);
       await session.abortTransaction();
       next(new AppError(err.message, err.statusCode));
     }
@@ -315,7 +311,6 @@ module.exports = {
           .select(filterAttr)
           .lean();
 
-        console.log(req.headers.timezoneoffset);
         const features = new APIFeature(allLoans, req.query)
           .filter(req.headers.timezoneoffset * 1)
           .sort()
@@ -323,12 +318,10 @@ module.exports = {
           .paginate();
 
         allLoans = await features.query;
-        console.log("allLoans", allLoans);
 
         if (!allLoans.length) throw new AppError("No Loan Found !", 404);
 
         allLoans.map((al) => {
-          console.log(al.timeZoneOffset * -1);
           al.loanStart = moment(al.loanStart)
             .utc(al.timeZoneOffset * -1)
             .format("DD-MM-YYYY, hh:mm:ss");
@@ -340,7 +333,6 @@ module.exports = {
           allLoans,
         });
       } else {
-        console.log("LOANS BY CUSTOMER");
         loan = loanModel
           .find({ customer: req.user.id })
           .populate({
@@ -361,7 +353,6 @@ module.exports = {
           throw new AppError("Loan not found between loan Start date", 404);
 
         allLoans.map((al) => {
-          console.log(al.timeZoneOffset * -1);
           al.loanStart = moment(al.loanStart)
             .utc(al.timeZoneOffset * -1)
             .format("DD-MM-YYYY, hh:mm:ss");
@@ -380,7 +371,6 @@ module.exports = {
       // get all loans
       next();
     } catch (err) {
-      console.log(err);
       next(new AppError(err.message, err.statusCode));
     }
   },
@@ -392,7 +382,6 @@ module.exports = {
         .findOne({ _id: loanId })
         .select({ emi: 1, currentLoanBalance: 1 });
 
-      console.log(loan);
       if (loan.currentLoanBalance <= 0)
         throw new AppError("you have sucessfully have paid your loan !", 403);
 
@@ -406,8 +395,6 @@ module.exports = {
       const opt = { new: true };
 
       const loanUpdated = await loanModel.updateOne(match, set, opt);
-
-      console.log(!loanUpdated.n);
 
       if (loanUpdated.n && loanUpdated.nModified) {
         req.locals = new Response("Emi have been paid sucessfully", 201);
@@ -438,9 +425,7 @@ function calculateEmi(loan) {
     totalAmount = p + interestPayable;
     emi = (p + interestPayable) / n;
   }
-  console.log(interestPayable);
-  console.log(totalAmount);
-  console.log(emi);
+
   return {
     emi: emi.toFixed(4),
     totalAmount: totalAmount.toFixed(4),

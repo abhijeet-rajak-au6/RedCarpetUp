@@ -27,7 +27,6 @@ describe("test for authorization", () => {
       password: "brajak1$",
       roles: "agent",
     });
-    console.log(validUserAgent);
 
     validUserAdmin = await User.create({
       name: "admin user",

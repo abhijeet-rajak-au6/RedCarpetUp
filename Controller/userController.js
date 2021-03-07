@@ -16,8 +16,6 @@ module.exports = {
       //payload
       const { password, email, name, roles } = req.body;
 
-      console.log(password.length);
-      console.log(email.length);
       // create user
       const newUser = await createOne(userModel, {
         password,
@@ -91,7 +89,6 @@ module.exports = {
       req.locals = new Response("List of users", 200, { users: allUsers });
       next();
     } catch (err) {
-      console.log(err);
       next(new AppError(err.message, err.statusCode));
     }
   },
@@ -99,7 +96,7 @@ module.exports = {
   async editUser(req, res, next) {
     try {
       const parameter = Object.keys(req.body);
-      console.log(req.body[parameter[0]]);
+
       const { id } = req.params;
 
       // check for valid params id
@@ -107,7 +104,6 @@ module.exports = {
       if (!mongoose.Types.ObjectId.isValid(id))
         throw new AppError("Invalid Id", 400);
 
-      // console.log(Mongoose.Types.ObjectId(id));
       let set = {};
       let condition = { _id: mongoose.Types.ObjectId(id) };
 
@@ -119,7 +115,6 @@ module.exports = {
 
       const updatedUser = await modifyOne(userModel, set, condition);
 
-      console.log("updatedUser", updatedUser);
       if (!updatedUser.n) throw new AppError("User not found !", 404);
 
       if (!updatedUser.nModified) {
@@ -131,7 +126,6 @@ module.exports = {
 
       next();
     } catch (err) {
-      console.log(err.name, err.code);
       next(new AppError(err.message, err.statusCode));
     }
   },

@@ -35,7 +35,7 @@ describe("/api/v1/register", () => {
     let result = await User.findOne({
       email: "abhijeetrajak10@gmail.com",
     });
-    console.log(result);
+
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("message", "user registered sucessfully");
     expect(result).not.toBeNull();
@@ -163,7 +163,6 @@ describe("/api/v1/register", () => {
       roles: "customer",
     });
 
-    console.log(res.body);
     expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("message", "email is already registered");
   });
@@ -179,8 +178,6 @@ describe("/api/v1/register", () => {
     const user = await User.findOne({
       email: "abhijeetrajak10@gmail.com",
     });
-
-    console.log(user);
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("message", "user registered sucessfully");
@@ -294,6 +291,7 @@ describe("/api/v1/login", () => {
     expect(res.body).toHaveProperty("message", `Welcome Avi`);
     expect(res.body).toHaveProperty("token");
   });
+
   it("should return 404 if email and password is incorrect", async () => {
     const payload = {
       email: "a@gmail.com",
@@ -409,7 +407,7 @@ describe("/api/v1/user/list-all-user", () => {
       .set("Authorization", tokenAgent);
 
     expect(resAdmin.status).toBe(200);
-    // console.log(resAdmin.body);
+
     expect(resAgent.status).toBe(200);
 
     resAdmin.body.users.map((u) => {
@@ -516,7 +514,6 @@ describe("/api/v1/user/edit-user/:id", () => {
       })
       .set("Authorization", tokenAdmin);
 
-    console.log(res.body);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("message", "Already Updated !");
   });
@@ -562,7 +559,7 @@ describe("/api/v1/user/edit-user/:id", () => {
       expiresIn: 60 * 10,
     });
     let userId = mongoose.Types.ObjectId("6036ca34b95e5903c5600206");
-    console.log(customer.token);
+
     const res = await request(server)
       .patch("/api/v1/user/edit-user/" + userId)
       .send({
